@@ -93,7 +93,15 @@ def build_dataset(
     fetch: bool = False,
     raw_root: Path | None = None,
     papers_root: Path | None = None,
+    keep_excluded: bool = False,
 ) -> dict:
+    """Build the v1-cohort parquet.
+
+    If `keep_excluded` is True, the held-out / excluded patients (AURA3,
+    OSCILLATE, atypical-variant rows) are retained in the parquet for the
+    sensitivity-slice analysis instead of being filtered out. The
+    `included_in_v1_cohort` column still distinguishes training from holdout.
+    """
     raw_root = raw_root or (Path("data") / "raw" / ("synthetic" if use_synthetic else "real"))
 
     tables = _build_synthetic(raw_root) if use_synthetic else _build_real(raw_root, fetch)
@@ -111,7 +119,7 @@ def build_dataset(
                 }
             )
 
-    cohort_tables = _apply_cohort(tables, cohort)
+    cohort_tables = tables if keep_excluded else _apply_cohort(tables, cohort)
 
     # Cast date columns so pyarrow writes them as DATE32, not object.
     for df in (
@@ -160,6 +168,12 @@ def main() -> None:
         help="Root dir containing per-study supplement folders. Each subdir name "
         "must match a registered adapter's study_id (see parsers/papers/README.md).",
     )
+    parser.add_argument(
+        "--keep-excluded",
+        action="store_true",
+        help="Keep held-out / excluded patients (AURA3, OSCILLATE, atypical EGFR) "
+        "in the parquet for the sensitivity-slice analysis. Default filters them.",
+    )
     args = parser.parse_args()
 
     meta = build_dataset(
@@ -169,6 +183,7 @@ def main() -> None:
         fetch=args.fetch,
         raw_root=args.raw_root,
         papers_root=args.papers_dir,
+        keep_excluded=args.keep_excluded,
     )
     print(json.dumps(meta, indent=2))
 

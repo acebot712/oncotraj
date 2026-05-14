@@ -60,6 +60,7 @@ from . import (  # noqa: E402
     _example_synthetic,  # noqa: F401
     chmielecki_2023_aura3,  # noqa: F401
     chmielecki_2023_flaura,  # noqa: F401
+    tan_2024_oscillate,  # noqa: F401
 )
 
 __all__ = [
