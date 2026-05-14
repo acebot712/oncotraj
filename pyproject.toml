@@ -27,6 +27,9 @@ dependencies = [
     "xgboost>=2.0",
 ]
 
+[project.scripts]
+oncotraj-eval = "oncotraj.eval.cli:main"
+
 [project.urls]
 Repository = "https://github.com/acebot712/oncotraj"
 

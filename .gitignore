@@ -33,10 +33,18 @@ data/processed/**
 !data/processed/.gitkeep
 *.parquet
 
-# Planning docs (local-only, gitignored)
+# Planning docs and Claude harness state (local-only, gitignored)
 .planning/
+paper/
+.claude/
 
 # MLflow tracking + trained baseline artefacts
 mlruns/
 models/baselines/**
 !models/baselines/.gitkeep
+
+# Cowork/Claude Code coordination markers — local-only, not committed
+.claude-step-done
+.claude-subagent-done
+.claude-session-start
+.claude-next-prompt
