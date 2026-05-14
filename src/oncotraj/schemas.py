@@ -166,7 +166,7 @@ class PatientRecord(BaseModel):
 
     model_config = ConfigDict(use_enum_values=True)
 
-    patient_id: str = Field(pattern=r"^[A-Z_]+:[A-Za-z0-9_\-\.]+$")
+    patient_id: str = Field(pattern=r"^[A-Z0-9_]+:[A-Za-z0-9_\-\.]+$")
     source_dataset: SourceDataset
     age_at_diagnosis_years: int = Field(ge=-1, le=110)
     sex: Sex

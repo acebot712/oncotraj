@@ -56,8 +56,9 @@ def load_all(papers_root: Path) -> ParsedTables:
 
 # Importing submodules registers their adapters via the decorator. Add new
 # studies here as `from . import <study_id_module>  # noqa: F401`.
-from . import (
+from . import (  # noqa: E402
     _example_synthetic,  # noqa: F401
+    chmielecki_2023_aura3,  # noqa: F401
     chmielecki_2023_flaura,  # noqa: F401
 )
 
