@@ -35,3 +35,8 @@ data/processed/**
 
 # Planning docs (local-only, gitignored)
 .planning/
+
+# MLflow tracking + trained baseline artefacts
+mlruns/
+models/baselines/**
+!models/baselines/.gitkeep
