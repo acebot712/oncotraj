@@ -1,10 +1,8 @@
 """Pydantic schemas for the four OncoTraj Parquet tables.
 
-Mirrors DATASET_SPEC.md v1.0.0. This module is the single source of truth for
-field names, types, and enum values that parsers and downstream code rely on.
-
-Field coverage is partial in v0.1.0 — patient table is fleshed out enough to
-validate; variants/treatments/outcomes are skeletons to be filled per spec.
+Mirrors DATASET_SPEC.md v1.0.0. Coverage in v0.1.0 is the subset of fields
+the GENIE + cBioPortal parsers populate. Fields not yet implemented are
+intentionally absent; adding them is additive (schema minor bump).
 """
 
 from __future__ import annotations
@@ -12,7 +10,7 @@ from __future__ import annotations
 from datetime import date
 from enum import StrEnum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class SourceDataset(StrEnum):
@@ -51,6 +49,16 @@ class StageAtDiagnosis(StrEnum):
     unknown = "unknown"
 
 
+class Histology(StrEnum):
+    adenocarcinoma = "adenocarcinoma"
+    squamous = "squamous"
+    adenosquamous = "adenosquamous"
+    large_cell = "large_cell"
+    NSCLC_NOS = "NSCLC_NOS"
+    small_cell = "small_cell"
+    other = "other"
+
+
 class EgfrVariantClass(StrEnum):
     exon19del = "exon19del"
     L858R = "L858R"
@@ -63,9 +71,13 @@ class EgfrVariantClass(StrEnum):
     unknown = "unknown"
 
 
-class ResistanceMechanism(StrEnum):
-    """Task C taxonomy (paper outline §5.3)."""
+class VitalStatus(StrEnum):
+    alive = "alive"
+    deceased = "deceased"
+    unknown = "unknown"
 
+
+class ResistanceMechanism(StrEnum):
     EGFR_C797S = "EGFR_C797S"
     MET_amplification = "MET_amplification"
     HER2_amplification = "HER2_amplification"
@@ -74,40 +86,147 @@ class ResistanceMechanism(StrEnum):
     other_or_unknown = "other_or_unknown"
 
 
+class SampleType(StrEnum):
+    tumor_tissue = "tumor_tissue"
+    ctDNA_plasma = "ctDNA_plasma"
+    ctDNA_cfDNA = "ctDNA_cfDNA"
+    normal_blood = "normal_blood"
+    normal_tissue = "normal_tissue"
+    unknown = "unknown"
+
+
+class Assay(StrEnum):
+    MSK_IMPACT_341 = "MSK_IMPACT_341"
+    MSK_IMPACT_410 = "MSK_IMPACT_410"
+    MSK_IMPACT_468 = "MSK_IMPACT_468"
+    MSK_ACCESS = "MSK_ACCESS"
+    FoundationOne_CDx = "FoundationOne_CDx"
+    FoundationOne_Liquid_CDx = "FoundationOne_Liquid_CDx"
+    Guardant360 = "Guardant360"
+    Guardant360_CDx = "Guardant360_CDx"
+    Tempus_xF = "Tempus_xF"
+    Tempus_xT = "Tempus_xT"
+    WES = "WES"
+    WGS = "WGS"
+    custom_panel = "custom_panel"
+    unknown = "unknown"
+
+
+class AlterationType(StrEnum):
+    SNV = "SNV"
+    indel_insertion = "indel_insertion"
+    indel_deletion = "indel_deletion"
+    indel_complex = "indel_complex"
+    CNV_amplification = "CNV_amplification"
+    CNV_deletion = "CNV_deletion"
+    fusion = "fusion"
+    rearrangement = "rearrangement"
+    splice = "splice"
+    promoter = "promoter"
+
+
+class OncoKBOncogenic(StrEnum):
+    oncogenic = "oncogenic"
+    likely_oncogenic = "likely_oncogenic"
+    predicted_oncogenic = "predicted_oncogenic"
+    resistance = "resistance"
+    likely_neutral = "likely_neutral"
+    inconclusive = "inconclusive"
+    unknown = "unknown"
+
+
+class LineOfTherapy(StrEnum):
+    first_line = "first_line"
+    second_line = "second_line"
+    third_line = "third_line"
+    fourth_plus = "fourth_plus"
+    unknown = "unknown"
+
+
+class OutcomeEventType(StrEnum):
+    osimertinib_start = "osimertinib_start"
+    osimertinib_stop = "osimertinib_stop"
+    progression_recist = "progression_recist"
+    molecular_resistance = "molecular_resistance"
+    death = "death"
+    last_followup = "last_followup"
+
+
+class RecistResponse(StrEnum):
+    complete_response = "complete_response"
+    partial_response = "partial_response"
+    stable_disease = "stable_disease"
+    progressive_disease = "progressive_disease"
+    not_evaluable = "not_evaluable"
+    unknown = "unknown"
+
+
 class PatientRecord(BaseModel):
     """One row of patients.parquet. See DATASET_SPEC.md §2."""
 
-    patient_id: str = Field(pattern=r"^[A-Z_]+:[A-Za-z0-9_\-]+$")
+    model_config = ConfigDict(use_enum_values=True)
+
+    patient_id: str = Field(pattern=r"^[A-Z_]+:[A-Za-z0-9_\-\.]+$")
     source_dataset: SourceDataset
     age_at_diagnosis_years: int = Field(ge=-1, le=110)
     sex: Sex
     smoking_status: SmokingStatus
     diagnosis_date: date
     stage_at_diagnosis: StageAtDiagnosis
+    histology: Histology
     egfr_variant_class: EgfrVariantClass
     site_id: str = Field(min_length=1, max_length=32)
-    vital_status_at_last_followup: str
+    vital_status_at_last_followup: VitalStatus
     last_followup_date: date
     included_in_v1_cohort: bool
+    exclusion_reason: str | None = None
 
 
 class VariantRecord(BaseModel):
-    """Skeleton — full fields per DATASET_SPEC.md §3 to be added."""
+    """One row of variants.parquet. See DATASET_SPEC.md §3."""
+
+    model_config = ConfigDict(use_enum_values=True)
 
     variant_id: str
     patient_id: str
-    sample_id: str
+    sample_id: str = Field(min_length=1, max_length=64)
+    sample_type: SampleType
+    sample_date: date
+    assay: Assay
+    gene_symbol: str = Field(min_length=1)
+    alteration_type: AlterationType
+    protein_change_hgvs: str | None = None
+    vaf: float = Field(ge=-1.0, le=1.0)
+    read_depth: int = Field(ge=-1, le=100_000)
+    oncokb_oncogenic: OncoKBOncogenic
+    is_germline: bool | None = None
+    is_baseline_driver: bool
+    is_resistance_call: bool
+    resistance_mechanism_class: ResistanceMechanism | None = None
 
 
 class TreatmentRecord(BaseModel):
-    """Skeleton — per DATASET_SPEC.md §4."""
+    """One row of treatments.parquet. See DATASET_SPEC.md §4."""
+
+    model_config = ConfigDict(use_enum_values=True)
 
     treatment_id: str
     patient_id: str
+    drug_name: str = Field(min_length=1)
+    line_of_therapy: LineOfTherapy
+    start_date: date
+    end_date: date | None = None
+    is_osimertinib: bool
 
 
 class OutcomeRecord(BaseModel):
-    """Skeleton — per DATASET_SPEC.md §5."""
+    """One row of outcomes.parquet. See DATASET_SPEC.md §5."""
+
+    model_config = ConfigDict(use_enum_values=True)
 
     outcome_id: str
     patient_id: str
+    event_type: OutcomeEventType
+    event_date: date
+    recist_response: RecistResponse | None = None
+    resistance_mechanism_class: ResistanceMechanism | None = None

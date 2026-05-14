@@ -3,6 +3,7 @@ from datetime import date
 from oncotraj import SCHEMA_VERSION, __version__
 from oncotraj.schemas import (
     EgfrVariantClass,
+    Histology,
     PatientRecord,
     Sex,
     SmokingStatus,
@@ -25,6 +26,7 @@ def test_patient_record_validates():
         smoking_status=SmokingStatus.never,
         diagnosis_date=date(2022, 4, 15),
         stage_at_diagnosis=StageAtDiagnosis.IVA,
+        histology=Histology.adenocarcinoma,
         egfr_variant_class=EgfrVariantClass.exon19del,
         site_id="site_a1b2",
         vital_status_at_last_followup="alive",
