@@ -34,10 +34,17 @@ EGFR_SENSITIZING_HGVSP = {
     EgfrVariantClass.L861Q: re.compile(r"p\.(?:L|Leu)861(?:Q|Gln)"),
     EgfrVariantClass.S768I: re.compile(r"p\.(?:S|Ser)768(?:I|Ile)"),
 }
+# Exon 19 deletions: residue range fully within 746-759 followed by `del` or
+# `delins<aa>`. Covers the canonical `E746_A750del`, the long tail of `delins`
+# variants (`E746_T751delinsVP`, `L747_P753delinsS`), and the rarer 750s starts.
 EXON19DEL_RE = re.compile(
-    r"p\.(?:E|Glu)746_(?:A|Ala)750del|p\.(?:L|Leu)747_.*del|exon\s*19.*del", re.I
+    r"p\.[A-Za-z]+74[6-9]_[A-Za-z]+(?:74[6-9]|75\d)(?:del|delins)|exon\s*19.*del", re.I
 )
-EXON20INS_RE = re.compile(r"p\..*ins|exon\s*20.*ins", re.I)
+# Exon 20 insertions: residue range in 760-779 ending with `ins` (not `delins`).
+# Negative lookbehind on `del` excludes exon-19 deletion-insertions.
+EXON20INS_RE = re.compile(
+    r"p\.[A-Za-z]+(?:76\d|77\d)_[A-Za-z]+(?:76\d|77\d)(?<!del)ins|exon\s*20.*ins", re.I
+)
 C797S_RE = re.compile(r"p\.(?:C|Cys)797(?:S|Ser)")
 T790M_RE = re.compile(r"p\.(?:T|Thr)790(?:M|Met)")
 
