@@ -25,6 +25,7 @@ from .logistic import LogisticRegressionModel
 from .lstm import LSTMModel
 from .majority import MajorityClassModel
 from .random_forest import RandomForestModel
+from .transformer import TransformerModel
 
 __all__ = [
     "MODEL_REGISTRY",
@@ -33,6 +34,7 @@ __all__ = [
     "MajorityClassModel",
     "OncoTrajModel",
     "RandomForestModel",
+    "TransformerModel",
     "XGBoostModel",
     "get_model",
 ]
