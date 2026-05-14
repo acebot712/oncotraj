@@ -127,13 +127,21 @@ def validate_tables(tables: ParsedTables, sample_size: int = 50) -> None:
         if df.empty:
             continue
         sample = df.sample(n=min(sample_size, len(df)), random_state=0)
+        int_fields = {name for name, info in model.model_fields.items() if info.annotation is int}
         for row in sample.to_dict(orient="records"):
-            cleaned = {
-                k: (None if isinstance(v, float) and pd.isna(v) else v) for k, v in row.items()
-            }
+            cleaned: dict = {}
+            for k, v in row.items():
+                if v is None or (isinstance(v, float | int | type(pd.NaT)) and pd.isna(v)):
+                    cleaned[k] = None
+                elif k in int_fields and isinstance(v, float):
+                    cleaned[k] = int(v)
+                else:
+                    cleaned[k] = v
             try:
                 model.model_validate(cleaned)
             except ValidationError as e:
                 raise ValueError(
                     f"Schema validation failed for {model.__name__} row {cleaned}: {e}"
                 ) from e
+            except TypeError as e:
+                raise ValueError(f"Schema TypeError for {model.__name__} row {cleaned}: {e}") from e

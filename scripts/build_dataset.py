@@ -21,6 +21,7 @@ import pandas as pd
 
 from oncotraj import SCHEMA_VERSION
 from oncotraj.parsers import cbioportal, genie, synthetic
+from oncotraj.parsers import papers as papers_pkg
 from oncotraj.parsers.common import ParsedTables, validate_tables
 
 
@@ -91,10 +92,25 @@ def build_dataset(
     use_synthetic: bool = False,
     fetch: bool = False,
     raw_root: Path | None = None,
+    papers_root: Path | None = None,
 ) -> dict:
     raw_root = raw_root or (Path("data") / "raw" / ("synthetic" if use_synthetic else "real"))
 
     tables = _build_synthetic(raw_root) if use_synthetic else _build_real(raw_root, fetch)
+
+    paper_study_ids: list[str] = []
+    if papers_root is not None and Path(papers_root).exists():
+        paper_tables = papers_pkg.load_all(Path(papers_root))
+        if len(paper_tables):
+            tables = tables.concat(paper_tables)
+            paper_study_ids = sorted(
+                {
+                    pid.split(":", 1)[1].split(".", 1)[0]
+                    for pid in paper_tables.patients["patient_id"]
+                    if ":" in pid and "." in pid.split(":", 1)[1]
+                }
+            )
+
     cohort_tables = _apply_cohort(tables, cohort)
 
     # Cast date columns so pyarrow writes them as DATE32, not object.
@@ -115,7 +131,10 @@ def build_dataset(
                 df[col] = pd.to_datetime(df[col]).dt.date
 
     validate_tables(cohort_tables)
-    sources = ["GENIE_BPC", "MSK_CHORD"] + (["__synthetic__"] if use_synthetic else [])
+    sources = ["GENIE_BPC", "MSK_CHORD"]
+    if use_synthetic:
+        sources.append("__synthetic__")
+    sources.extend(f"paper:{sid}" for sid in paper_study_ids)
     return _write_outputs(cohort_tables, output_dir, sources)
 
 
@@ -134,6 +153,13 @@ def main() -> None:
         help="Force network fetch of GENIE + cBioPortal sources before parsing.",
     )
     parser.add_argument("--raw-root", type=Path, default=None)
+    parser.add_argument(
+        "--papers-dir",
+        type=Path,
+        default=None,
+        help="Root dir containing per-study supplement folders. Each subdir name "
+        "must match a registered adapter's study_id (see parsers/papers/README.md).",
+    )
     args = parser.parse_args()
 
     meta = build_dataset(
@@ -142,6 +168,7 @@ def main() -> None:
         use_synthetic=args.use_synthetic,
         fetch=args.fetch,
         raw_root=args.raw_root,
+        papers_root=args.papers_dir,
     )
     print(json.dumps(meta, indent=2))
 
