@@ -16,14 +16,19 @@ Available models:
 - `XGBoostModel` — xgboost.XGB{Classifier,Regressor}.
 """
 
+# Import order matters: xgboost must load before torch on Python 3.14 to
+# avoid a SEGV during XGBClassifier.fit when both libraries are present.
+# Tracked upstream; do not reorder without re-verifying the test suite.
+from .xgb import XGBoostModel  # noqa: I001
 from .base import MODEL_REGISTRY, OncoTrajModel, get_model
 from .logistic import LogisticRegressionModel
+from .lstm import LSTMModel
 from .majority import MajorityClassModel
 from .random_forest import RandomForestModel
-from .xgb import XGBoostModel
 
 __all__ = [
     "MODEL_REGISTRY",
+    "LSTMModel",
     "LogisticRegressionModel",
     "MajorityClassModel",
     "OncoTrajModel",
